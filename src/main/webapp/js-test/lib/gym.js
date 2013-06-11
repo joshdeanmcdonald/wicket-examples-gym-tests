@@ -1,8 +1,31 @@
 
+var load = function(url) {
+    var deferred = $q.Deferred();
+    onPageLoad(function(iframe, $) {
+        deferred.resolve(iframe, $);
+    });
+    getIframe().attr('src', url);
+
+    return deferred;
+}
+
+var click = function($btn) {
+    var deferred = $q.Deferred();
+    onPageLoad(function(iframe, $$) {
+        deferred.resolve(iframe, $$);
+    });
+
+	$btn.click();
+
+    return deferred;
+}
+
+// private
 var getIframe = function() {
 	return $q('#applicationFrame');
 }
 
+// private
 var onPageLoad = function(toExecute) {
 
 	getIframe()
@@ -29,11 +52,24 @@ var jQueryWithContext = function(selector) {
 	return $q(selector, $q(getIframe()).contents());
 };
 
+var ajaxClick = function($btn) {
+	var deferred = $q.Deferred();
+	var iframeWindow = getIframe()[0].contentWindow;
+
+	onAjaxComplete(iframeWindow, function($$) {
+		deferred.resolve($$);
+	});
+
+	$btn.click();
+
+	return deferred;
+}
+
 /**
  * Registers a callback when Wicket Ajax call is completed
  */
 var onAjaxComplete = function(iframe, toExecute) {
-	
+
 	// unregister any leaked subscriber
 	iframe.jQuery(iframe.document).off('/ajax/call/complete');
 	
@@ -43,7 +79,8 @@ var onAjaxComplete = function(iframe, toExecute) {
 		iframe.jQuery(iframe.document).off('/ajax/call/complete');
 		
 		// call back
-		toExecute.call(iframe);
+		var $$ = iframe.jQuery || jQueryWithContext;
+		toExecute($$);
 	});
 };
 
